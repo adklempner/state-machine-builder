@@ -1,0 +1,29 @@
+{
+  "name": "state-machine-builder",
+  "version": "0.0.0",
+  "description": "An on-chain, permission-based state machine builder.",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "truffle test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adklempner/state-machine-builder.git"
+  },
+  "keywords": [
+    "solidity",
+    "evm"
+  ],
+  "author": "Arseniy Klempner",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/adklempner/state-machine-builder/issues"
+  },
+  "homepage": "https://github.com/adklempner/state-machine-builder#readme",
+  "dependencies": {
+    "zeppelin-solidity": "^1.6.0"
+  }
+}
