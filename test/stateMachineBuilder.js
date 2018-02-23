@@ -36,6 +36,7 @@ contract('StateMachineBuilder', (accounts) => {
   const stateNames = ['State1-1', 'State1-2', 'State1-3', 'State3-2', 'State4']
   const ADMIN_ROLE = 'admin'
   const roleNames = ['superuser', 'user', 'trustedMachine']
+  const labels = ['Label0','Label1','Label2','Label3', 'Label4']
 
   before(async () => {
     stateMachineBuilders[0] = await StateMachineBuilder.new()
@@ -59,10 +60,14 @@ contract('StateMachineBuilder', (accounts) => {
 
     let processId = 0
 
+    it('can add new labels', async() => {
+      await stateMachineBuilders[0].addLabel(labels[0], ADMIN_ROLE, false);
+    })
+
     it('can add a new state change', async () => {
       let enabled = await stateMachineBuilders[0].isValidStateTransition(stateMachineNames[0], INIT_STATE, stateNames[0])
       assert(!enabled)
-      await stateMachineBuilders[0].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[0], ADMIN_ROLE, false, {from: admin})
+      await stateMachineBuilders[0].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[0], labels[0], {from: admin})
       enabled = await stateMachineBuilders[0].isValidStateTransition(stateMachineNames[0], INIT_STATE, stateNames[0])
       assert(enabled)
     })
@@ -76,7 +81,7 @@ contract('StateMachineBuilder', (accounts) => {
     })
 
     it('can add an initial state and start a new cycle', async() => {
-      await stateMachineBuilders[0].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[0], ADMIN_ROLE, false, {from: admin})
+      await stateMachineBuilders[0].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[0], labels[0], {from: admin})
       let processState = await stateMachineBuilders[0].getProcessState(stateMachineNames[0], processId)
       assert.equal(bytes32ToString(processState), INIT_STATE)
       let tx = await stateMachineBuilders[0].performStateTransition(stateMachineNames[0], processId, stateNames[0], {from: admin})
@@ -107,7 +112,8 @@ contract('StateMachineBuilder', (accounts) => {
         isInvalidOpcodeEx(e)
       }
 
-      await stateMachineBuilders[0].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[1], roleNames[0], false, {from: admin})
+      await stateMachineBuilders[0].addLabel(labels[1], roleNames[0], false)
+      await stateMachineBuilders[0].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[1], labels[1], {from: admin})
 
       try {
         await stateMachineBuilders[0].performStateTransition(stateMachineNames[0], processId, stateNames[1], {from: admin})
@@ -129,8 +135,13 @@ contract('StateMachineBuilder', (accounts) => {
       assert.equal(bytes32ToString(processStateTargetMachine), INIT_STATE)
 
       await stateMachineBuilders[0].adminAddRole(stateMachineBuilders[1].address, roleNames[2])
-      await stateMachineBuilders[0].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[2], roleNames[2], false, {from: admin})
-      await stateMachineBuilders[1].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[0], ADMIN_ROLE, true, {from: admin})
+
+      await stateMachineBuilders[0].addLabel(labels[2], roleNames[2], false)
+      await stateMachineBuilders[0].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[2], labels[2], {from: admin})
+
+      await stateMachineBuilders[1].addLabel(labels[3], ADMIN_ROLE, true)
+      await stateMachineBuilders[1].addStateTransition(stateMachineNames[0], INIT_STATE, stateNames[0], labels[3], {from: admin})
+
       await stateMachineBuilders[1].performNetworkedStateTransition(stateMachineNames[0], processId, stateNames[0], stateMachineNames[0], processId, stateNames[2], stateMachineBuilders[0].address, {from: admin})
 
       processStateHomeMachine = await stateMachineBuilders[0].getProcessState(stateMachineNames[0], processId)
