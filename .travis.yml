@@ -3,8 +3,7 @@ language: node_js
 sudo: required
 
 node_js:
-  - "6.3"
-  - "6.9"
+  - "7.5"
 
 env:
   - CXX=g++-4.8
@@ -23,7 +22,7 @@ before_install:
   - npm install -g ethereumjs-testrpc truffle
 
 install:
-  - npm install 
+  - npm install
 
 
 script:
