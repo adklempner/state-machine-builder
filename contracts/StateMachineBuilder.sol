@@ -6,17 +6,31 @@ import "zeppelin-solidity/contracts/ownership/rbac/RBAC.sol";
 
 contract StateMachineBuilder is RBAC, ProcessRunner {
 
+  struct Transition {
+    string authorizedRole;
+    bool networked;
+  }
+
   using State for State.Machine;
 
   mapping(bytes32 => State.Machine) stateMachines;
 
-  event StateTransitionAdded(bytes32 machineId, bytes32 fromState, bytes32 toState, address user);
+  mapping(bytes32 => Transition) labels;
+
+  event LabelAdded(bytes32 label);
+  event StateTransitionAdded(bytes32 machineId, bytes32 fromState, bytes32 toState, bytes32 label, address user);
   event StateTransitionRemoved(bytes32 machineId, bytes32 fromState, bytes32 toState, address user);
   event StateTransitionPerformed(bytes32 machineId, bytes32 processId, bytes32 fromState, bytes32 toState, address user);
 
-  function addStateTransition(bytes32 machineId, bytes32 fromState, bytes32 toState, string role, bool networked) onlyAdmin {
-    stateMachines[machineId].addTransition(fromState, toState, role, networked);
-    StateTransitionAdded(machineId, fromState, toState, msg.sender);
+  function addLabel(bytes32 label, string role, bool _networked) onlyAdmin {
+    labels[label].authorizedRole = role;
+    labels[label].networked = _networked;
+    LabelAdded(label);
+  }
+
+  function addStateTransition(bytes32 machineId, bytes32 fromState, bytes32 toState, bytes32 label) onlyAdmin {
+    stateMachines[machineId].addTransition(fromState, toState, label);
+    StateTransitionAdded(machineId, fromState, toState, label, msg.sender);
   }
 
   function removeStateTransition(bytes32 machineId, bytes32 fromState, bytes32 toState) onlyAdmin {
@@ -28,10 +42,10 @@ contract StateMachineBuilder is RBAC, ProcessRunner {
     bytes32 fromState = stateMachines[machineId].processes[processId];
 
     //Check that caller is authorized to make this state change
-    checkRole(msg.sender, stateMachines[machineId].transitionGraph[fromState][toState].authorizedRole);
+    checkRole(msg.sender, labels[stateMachines[machineId].transitionGraph[fromState][toState]].authorizedRole);
 
     //Check that the transition does not need a network call
-    require(!stateMachines[machineId].transitionGraph[fromState][toState].networked);
+    require(!labels[stateMachines[machineId].transitionGraph[fromState][toState]].networked);
 
     //Perform transition on state machine
     require(stateMachines[machineId].performTransition(processId, toState));
@@ -43,10 +57,10 @@ contract StateMachineBuilder is RBAC, ProcessRunner {
     bytes32 fromState = stateMachines[machineId].processes[processId];
 
     //Check that caller is authorized to make this state change
-    checkRole(msg.sender, stateMachines[machineId].transitionGraph[fromState][toState].authorizedRole);
+    checkRole(msg.sender, labels[stateMachines[machineId].transitionGraph[fromState][toState]].authorizedRole);
 
     //Check that the transition requires an additional network call
-    require(stateMachines[machineId].transitionGraph[fromState][toState].networked);
+    require(labels[stateMachines[machineId].transitionGraph[fromState][toState]].networked);
 
     //Perform transition on home state machine
     require(stateMachines[machineId].performTransition(processId, toState));
