@@ -3,3 +3,7 @@ build
 
 # Dependency directories
 node_modules
+
+# Coverage
+coverage
+coverage.json
